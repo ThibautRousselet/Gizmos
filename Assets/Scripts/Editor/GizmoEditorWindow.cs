@@ -1,19 +1,16 @@
 ﻿using UnityEngine;
 using UnityEditor;
-using technical.test.editor;
-using System;
-using UnityEngine.SceneManagement;
-using UnityEngine.Experimental.GlobalIllumination;
-using System.Collections.Generic;
+
+//Custom Editor window for the gizmo asset
+//Contains input fields for every gizmos properties
 
 public class GizmoEditorWindow : EditorWindow
 {
     //fields
-    public GizmoAsset gizmoData; //Asset selected
-
-    public static int selectedIndex = -1; //ID of the selected gizmo
     private static GUILayoutOption layout; //Layout of the inputfields
     public static GizmoEditorWindow Instance { get; set; }
+
+    private Vector2 scrollPosition = Vector2.zero;
 
     //functions
     public static bool IsOpen
@@ -39,73 +36,73 @@ public class GizmoEditorWindow : EditorWindow
     [UnityEditor.Callbacks.OnOpenAsset()]
     public static bool OnClickGizmoAsset(int instanceID, int line)
     {
-        return OpenGizmoAsset(instanceID);
+        return OpenGizmoAsset();
     }
 
-    //Utility function to open the window with a specific asset values
-    public static bool OpenGizmoAsset(int instanceID)
+    //Utility function to open the window
+    public static bool OpenGizmoAsset()
     {
-        selectedIndex = -1;
-        GizmoAsset tmpGizmo = EditorUtility.InstanceIDToObject(instanceID) as GizmoAsset;
-        if (tmpGizmo != null)
-        {
-            GizmoEditorWindow window = OpenGizmoEditorWindow();
-            window.minSize = new Vector2(600, 1);
-            window.maxSize = new Vector2(600, 10000);
-            window.gizmoData = tmpGizmo;
-            SceneView.RepaintAll();
-            return true;
-        }
-        return false;
-    }
-
-    //Sets gizmoAsset to null and clear the window content
-    public void ClearContent()
-    {
-        gizmoData = null;
-        selectedIndex = -1;
-        Instance.Repaint();
+         GizmoEditorWindow window = OpenGizmoEditorWindow();
+         window.minSize = new Vector2(600, 1);
+         SceneView.RepaintAll();
+         return true;
     }
    
 
     //Window GUI update
     private void OnGUI()
     {
-        if (gizmoData != null)
+        if (GizmoCustomEditor._gizmos != null)
         {
-            for (int i = 0; i < gizmoData._gizmos.Length; i++)
+            float fieldWidth = position.width / 5.0f;
+
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+
+            //Columns names
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("name", GUILayout.MinWidth(100), GUILayout.MaxWidth(fieldWidth));
+            EditorGUILayout.LabelField(" ", GUILayout.MinWidth(100), GUILayout.MaxWidth(fieldWidth));
+            EditorGUILayout.LabelField("position", GUILayout.MinWidth(100), GUILayout.MaxWidth(fieldWidth));
+            EditorGUILayout.EndHorizontal();
+
+            for (int i = 0; i < GizmoCustomEditor._gizmos.arraySize; i++)
             {
                 //Color the selected line in red
-                if (i == selectedIndex)
+                if (i == GizmoCustomEditor.selectedIndex)
                     GUI.color = Color.red;
                 else
                     GUI.color = Color.white;
+
                 
+                //Input fields
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.Space();
-                gizmoData._gizmos[i].Name = EditorGUILayout.TextField(gizmoData._gizmos[i].Name, GUILayout.MinWidth(100));
+                GizmoCustomEditor.SetNameAt(i, EditorGUILayout.TextField(GizmoCustomEditor.GetNameAt(i), GUILayout.MinWidth(100), GUILayout.MaxWidth(fieldWidth)));
                 EditorGUILayout.Space();
-                gizmoData._gizmos[i].Position = EditorGUILayout.Vector3Field("", gizmoData._gizmos[i].Position, GUILayout.MinWidth(300));
+                GizmoCustomEditor.SetPositionAt(i, EditorGUILayout.Vector3Field("", GizmoCustomEditor.GetPositiontAt(i), GUILayout.MinWidth(300), GUILayout.MaxWidth(fieldWidth * 3)));
                 EditorGUILayout.Space();
-                if (GUILayout.Button("Edit", GUILayout.MinWidth(100)))
+                if (GUILayout.Button("Edit", GUILayout.MinWidth(100), GUILayout.MaxWidth(fieldWidth)))
                 {
                     EditButtonHandler(i);
                 }
                 EditorGUILayout.Space();
                 EditorGUILayout.EndHorizontal();
                 EditorGUILayout.Space();
-
             }
+            GUILayout.EndScrollView();
         }
     }
 
+    //Handler of edit button. Set the index of the selected gizmo and save the initial position
     private void EditButtonHandler(int index)
     {
-        if (index == selectedIndex)
-            selectedIndex = -1;
+        if (index == GizmoCustomEditor.selectedIndex)
+            GizmoCustomEditor.selectedIndex = -1;
         else
-            selectedIndex = index;
+            GizmoCustomEditor.selectedIndex = index;
 
+        //Save the position when entering edit mode
+        GizmoCustomEditor.StartingPosition = GizmoCustomEditor.GetPositiontAt(index);
         SceneView.RepaintAll();
     }
 }

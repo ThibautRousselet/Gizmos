@@ -6,6 +6,6 @@ namespace technical.test.editor
     public class GizmoAsset : ScriptableObject
     {
         [SerializeField]
-        public InformationGizmo[] _gizmos = default;
+        private InformationGizmo[] _gizmos = default;
     }
 }
